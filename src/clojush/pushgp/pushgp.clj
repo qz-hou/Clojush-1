@@ -172,7 +172,7 @@
   "Processes the generation, returning [new novelty archive, return val],
    where new novelty archive will be nil if we are done."
   [rand-gens pop-agents child-agents generation novelty-archive
-   {:keys [population-size use-single-thread] :as argmap}]
+   {:keys [population-size use-single-thread passed-func failed-func] :as argmap}]
   (r/new-generation! generation)
   (println "Processing generation:" generation)
   (case (:genome-representation @push-argmap)
@@ -293,6 +293,13 @@
                                       (when-not (:use-single-thread @push-argmap (apply await pop-agents))) ;; SYNCHRONIZE
                                       (reset! delay-archive [])))
                                   (timer @push-argmap :report)
+                                  (println "start simp")
+                                  (repeatedly 50 (let [vectorr
+                                                       (auto-simplify-plush (select (map #(deref %) pop-agents) @push-argmap) (:error-function @push-argmap) (:training-cases @push-argmap) 10 0)]
+                                                   (swap! push-argmap assoc :passed-func (conj (get vectorr 0) (flatten (:passed-func @push-argmap))))
+                                                   (swap! push-argmap assoc :failed-func (conj (get vectorr 1) (flatten (:failed-func @push-argmap))))))
+                                  (prn "passed are:" (:passed-func @push-argmap))
+                                  (prn "failed are:" (:failed-func @push-argmap))
                                   (println "\nProducing offspring...") (flush)
                                   (produce-new-offspring pop-agents
                                                          child-agents
@@ -329,6 +336,8 @@
      (let [pop-agents (make-pop-agents @push-argmap)
            child-agents (make-child-agents @push-argmap)
            {:keys [rand-gens]} (make-rng @push-argmap)]
+       (swap! push-argmap assoc :passed-func #{})
+       (swap! push-argmap assoc :failed-func #{})
        (loop [generation 0
               novelty-archive '()]
          (let [[next-novelty-archive return-val]
@@ -337,6 +346,3 @@
            (if (nil? next-novelty-archive)
              return-val
              (recur (inc generation) next-novelty-archive))))))))
-
-
-
