@@ -172,7 +172,7 @@
   "Processes the generation, returning [new novelty archive, return val],
    where new novelty archive will be nil if we are done."
   [rand-gens pop-agents child-agents generation novelty-archive
-   {:keys [population-size use-single-thread passed-func failed-func] :as argmap}]
+   {:keys [population-size use-single-thread] :as argmap}]
   (r/new-generation! generation)
   (println "Processing generation:" generation)
   (case (:genome-representation @push-argmap)
@@ -295,11 +295,10 @@
                                   (timer @push-argmap :report)
                                   (println "start simp")
                                   (repeatedly 50 (let [vectorr
-                                                       (auto-simplify-plush (select (map #(deref %) pop-agents) @push-argmap) (:error-function @push-argmap) (:training-cases @push-argmap) 10 0)]
-                                                   (swap! push-argmap assoc :passed-func (conj (get vectorr 0) (flatten (:passed-func @push-argmap))))
-                                                   (swap! push-argmap assoc :failed-func (conj (get vectorr 1) (flatten (:failed-func @push-argmap))))))
-                                  (prn "passed are:" (:passed-func @push-argmap))
-                                  (prn "failed are:" (:failed-func @push-argmap))
+                                                       (auto-simplify-plush (select (map #(deref %) pop-agents) @push-argmap) (:error-function @push-argmap) (:training-cases @push-argmap) 10 0)]))
+                                  (prn "passed are:" (:passed-set @the-map))
+                                  (prn "failed are:" (:failed-set @the-map))
+
                                   (println "\nProducing offspring...") (flush)
                                   (produce-new-offspring pop-agents
                                                          child-agents
